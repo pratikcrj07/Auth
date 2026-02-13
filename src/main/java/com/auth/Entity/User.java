@@ -6,7 +6,6 @@ import org.springframework.data.annotation.Id;
 
 import javax.management.relation.Role;
 
-
     @Entity
     @Getter
     @Setter
@@ -14,7 +13,6 @@ import javax.management.relation.Role;
     @AllArgsConstructor
     @Builder
     @Table(name = "users")
-
     public class User {
 
         @Id
