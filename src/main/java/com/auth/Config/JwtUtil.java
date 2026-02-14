@@ -1,36 +1,72 @@
 package com.auth.Config;
-
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import io.lettuce.core.dynamic.annotation.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
-    private String secret;
+    @Value("${jwt.access-secret}")
+    private String accessSecret;
 
-    @Value("${jwt.expiration}")
-    private long expiration;
+    @Value("${jwt.refresh-secret}")
+    private String refreshSecret;
 
-    public String generateToken(String username) {
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
+
+    private Key getAccessKey() {
+        return Keys.hmacShaKeyFor(accessSecret.getBytes());
+    }
+
+    private Key getRefreshKey() {
+        return Keys.hmacShaKeyFor(refreshSecret.getBytes());
+    }
+
+    public String generateAccessToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
+                .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
+                .signWith(getAccessKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractUsername(String token) {
+    public String generateRefreshToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
+                .signWith(getRefreshKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String extractUsername(String token, boolean isAccessToken) {
         return Jwts.parserBuilder()
-                .setSigningKey(secret.getBytes())
+                .setSigningKey(isAccessToken ? getAccessKey() : getRefreshKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    public boolean validateAccessToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(getAccessKey())
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
