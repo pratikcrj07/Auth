@@ -5,6 +5,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 
 import javax.management.relation.Role;
+import java.time.LocalDateTime;
+
 
     @Entity
     @Getter
@@ -30,7 +32,11 @@ import javax.management.relation.Role;
         @Enumerated(EnumType.STRING)
         private Role role;
 
-        private boolean enabled;
+        private boolean enabled = true;
+
+        private int failedAttempts = 0;
+
+        private boolean accountNonLocked = true;
+
+        private LocalDateTime lockTime;
     }
-
-
