@@ -2,9 +2,6 @@ package com.auth.Entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
-
-import javax.management.relation.Role;
 import java.time.LocalDateTime;
 
 

@@ -12,9 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -22,13 +19,10 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final RefreshTokenService refreshTokenService;
-    private final LoginAttemptService loginAttemptService;
 
     @Value("${jwt.access-expiration}")
     private long accessExpiration;
 
-    // REGISTER
     public AuthResponse register(RegisterRequest request) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -41,78 +35,33 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.ROLE_USER)
                 .enabled(true)
+                .accountNonLocked(true)
                 .build();
 
         userRepository.save(user);
 
-        String accessToken =
-                jwtUtil.generateAccessToken(user.getEmail(),
-                        user.getRole().name());
+        String accessToken = jwtUtil.generateAccessToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
 
-        String refreshToken =
-                refreshTokenService.createRefreshToken(user.getEmail());
-
-        return new AuthResponse(accessToken, refreshToken);
+        return new AuthResponse(accessToken);
     }
 
-    // LOGIN
     public AuthResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!user.isAccountNonLocked()) {
-            if (!loginAttemptService.unlockIfExpired(user)) {
-                throw new RuntimeException("Account locked");
-            }
-        }
-
-        if (!passwordEncoder.matches(request.getPassword(),
-                user.getPassword())) {
-
-            loginAttemptService.loginFailed(user);
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
 
-        loginAttemptService.loginSucceeded(user);
-
-        String accessToken =
-                jwtUtil.generateAccessToken(user.getEmail(),
-                        user.getRole().name());
-
-        String refreshToken =
-                refreshTokenService.createRefreshToken(user.getEmail());
-
-        return new AuthResponse(accessToken, refreshToken);
-    }
-
-    // REFRESH
-    public String refresh(String refreshToken) {
-
-        String username =
-                jwtUtil.extractUsername(refreshToken, false);
-
-        if (!refreshTokenService
-                .validateRefreshToken(username, refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
-        }
-
-        return jwtUtil.generateAccessToken(
-                username,
-                userRepository.findByEmail(username).get()
-                        .getRole().name()
+        String accessToken = jwtUtil.generateAccessToken(
+                user.getEmail(),
+                user.getRole().name()
         );
-    }
 
-    // LOGOUT
-    public void logout(String accessToken, String username) {
-
-        refreshTokenService.deleteRefreshToken(username);
-
-        refreshTokenService.blacklistAccessToken(
-                accessToken,
-                accessExpiration
-        );
+        return new AuthResponse(accessToken);
     }
 }

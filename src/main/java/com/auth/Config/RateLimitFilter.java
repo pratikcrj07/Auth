@@ -1,5 +1,8 @@
 package com.auth.Config;
-import io.github.bucket4j.*;
+
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Bucket4j;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.stereotype.Component;
@@ -35,6 +38,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } else {
             response.setStatus(429);
+            response.getWriter().write("Too many requests");
         }
     }
 }
