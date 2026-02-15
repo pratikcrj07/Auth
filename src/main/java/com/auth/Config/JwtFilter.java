@@ -43,8 +43,9 @@ public class JwtFilter extends OncePerRequestFilter {
             }
 
             if (jwtUtil.validateAccessToken(token)) {
-                username = jwtUtil.extractUsername(token, true);
+                username = jwtUtil.extractUsername(token);
             }
+
         }
 
         if (username != null &&
