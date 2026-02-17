@@ -1,5 +1,8 @@
 package com.auth.Controller;
 
+import com.auth.Dto.*;
+import com.auth.Service.AuthService;
+import com.auth.Service.OtpService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
